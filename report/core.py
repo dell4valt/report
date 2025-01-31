@@ -259,19 +259,30 @@ class Report:
         # Сохраняем график в файл
         chart.savefig(file_path, dpi=dpi)
         # Вставляем график в документ отчёта
-        doc.add_picture(file_path, width=Cm(width))
-        # Устанавливаем стиль графика
-        last_paragraph = doc.paragraphs[-1]
-        last_paragraph.style = self.STYLES["figure"]["fig"]
-        doc.add_paragraph(
-            f"{self.TEXT["figure"]} — {title}", style=self.STYLES["figure"]["title"]
-        )
+        self.insert_picture(file_path, title=title, width=width)
 
         # Пытаемся удалить файл графика
         try:
             os.remove(file_path)
         except FileNotFoundError:
             pass
+
+    def insert_picture(self, file_path, title=None, width=16.5) -> None:
+        """Метод вставляет изображение в документ Word.
+
+        Args:
+            file_path (str): Путь к картинке.
+            width (float): Ширина картинки в сантиметрах.
+        """
+        doc = self.doc
+        doc.add_picture(file_path, width=Cm(width))
+        # Устанавливаем стиль графика
+        last_paragraph = doc.paragraphs[-1]
+        last_paragraph.style = self.STYLES["figure"]["fig"]
+        if title:
+            doc.add_paragraph(
+                f"{self.TEXT["figure"]} — {title}", style=self.STYLES["figure"]["title"]
+            )
 
     def insert_page_break(self) -> None:
         """Метод вставляет в документ Word разрыв страницы
