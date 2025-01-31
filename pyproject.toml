@@ -9,13 +9,19 @@ description = "A wrapper around python-docx for easy technical report creation"
 readme = "README.md"
 authors = [{ name = "Vladimir Kamenev", email = "dell4valt@gmail.com" }]
 license = { file = "LICENSE" }
-dependencies = ["python-docx"]
+dependencies = ["python-docx", "pandas", "python-docx"]
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[tool.setuptools.packages.find]
+include = ["report"]
+
+[tool.setuptools.package-data]
+"report" = ["templates/*.docx"]
 
 [project.urls]
 "Homepage" = "https://github.com/dell4valt/report"
