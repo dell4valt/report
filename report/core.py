@@ -366,7 +366,10 @@ class Report:
         else:
             print(f"Файл {template_path} не обнаружен.")
             print("Отчет будет сохранен с файлом шаблона по умолчанию.")
-            self._init_empty_report()
+            if os.path.exists(self.DEFAULT_TEMPLATE):
+                self._init_empty_report()
+            else:
+                raise FileExistsError(f"Файл шаблона по умолчанию: {self.DEFAULT_TEMPLATE} не обнаружен.")
 
     def remove_paragraph(self, index=-1) -> None:
         """Метод удаляет параграф из файла документа. По умолчанию удаляется текущий параграф.
