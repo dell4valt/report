@@ -12,6 +12,7 @@
 import os
 import random
 from pathlib import Path
+from importlib import resources
 
 import pandas as pd
 from docx import Document
@@ -31,7 +32,7 @@ class Report:
     """
 
     # Путь к файлу шаблона отчета по умолчанию
-    DEFAULT_TEMPLATE = "report/templates/template.docx"
+    DEFAULT_TEMPLATE = str(resources.files("report").joinpath("templates/template.docx"))
 
     STYLES = {
         "table": {
