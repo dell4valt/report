@@ -116,6 +116,82 @@ class Report:
 
         self.doc.add_paragraph(text, style=self.STYLES["heading"][level])
 
+    def merge_table_cells(
+        self,
+        table,
+        start_row: int,
+        end_row: int,
+        start_column: int,
+        end_column: int,
+        value: str = "",
+        style: str = "Т-таблица",
+    ) -> None:
+        """Метод объединяет ячейки таблицы и при необходимости 
+        вставляет текст в объединенные ячейки.
+
+        Args:
+            table (Table): Таблица.
+            start_row (int): Номер строки начала объединения.
+            end_row (int): Номер строки конца объединения.
+            start_column (int): Номер столбца начала объединения.
+            end_column (int): Номер столбца конца объединения.
+            value (str, optional): Текст, который необходимо вставить в объединенную ячейку.
+            style (str, optional): Стиль текста в объединенной ячейке.
+        """
+        col_num = len(table.columns)
+        row_num = len(table.rows)
+
+        # Проверка значений
+        if start_row >= row_num or end_row >= row_num:
+            raise ValueError(
+                "Значение start_row или end_row больше количества строк в таблице."
+            )
+        if start_column >= col_num or end_column >= col_num:
+            raise ValueError(
+                "Значение start_column или end_column больше количества столбцов в таблице."
+            )
+
+        if (start_row > end_row or start_column > end_column) or (
+            start_row < 0 or end_row < 0 or start_column < 0 or end_column < 0
+        ):
+            raise ValueError(
+                f"Неверные значения для объединения ячейки: "
+                f"start_row={start_row}, end_row={end_row}, "
+                f"start_column={start_column}, end_column={end_column}"
+            )
+
+        # Объединяем ячейки
+        table.cell(start_row, start_column).merge(table.cell(end_row, end_column))
+
+        # Устанавливаем значения ячейке и стиль текста
+        if value:
+            table.cell(start_row, start_column).text = value
+            for paragraph in table.cell(start_row, start_column).paragraphs:
+                paragraph.style = style
+
+    def get_table_cell_value(self, table, row: int, column: int) -> str:
+        """Возвращает текст из ячейки таблицы.
+
+        Args:
+            table (Table): Таблица.
+            row (int): Номер строки.
+            column (int): Номер столбца.
+        """
+        if not table:
+            raise ValueError("Таблица не должна быть пустой.")
+
+        if row < 0 or column < 0:
+            raise ValueError("Значение row или column не может быть отрицательным.")
+
+        if row >= len(table.rows) or column >= len(table.columns):
+            raise IndexError("Значение row или column выходит за границы таблицы.")
+
+        cell = table.cell(row, column)
+        if not cell:
+            raise ValueError("Cell is null")
+
+        return cell.text
+
     def insert_df_to_table(
         self,
         df,
