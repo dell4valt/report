@@ -17,7 +17,7 @@ from importlib import resources
 import pandas as pd
 from docx import Document
 from docx.enum.text import WD_BREAK
-from docx.shared import Cm
+from docx.shared import Cm, Pt
 
 
 class Report:
@@ -596,6 +596,30 @@ def set_table_style(
                             "Ошибка установки стиля первой строки, "
                             f"заголовок: {paragraph.text}, стиль: {first_row_style}"
                         )
+
+
+def set_table_font_size(table, font_size=10) -> None:
+    """Метод проходит по всем ячейкам таблицы table и устанавливает
+    заданный размер шрифта font_size параграфов в таблице.
+
+    Args:
+        table (docx.table.Table): Таблица в документе docx
+        font_size (int): Размер шрифта. По умолчанию 10.
+    """
+    # Получаем доступ к ячейкам таблицы из соображений производительности
+    # и считаем количество колонок и строк
+    cells = table._cells
+    columns = len(table.columns)
+    rows = len(table.rows)
+
+    for row_idx in range(rows):
+        for column_idx in range(columns):
+            # Номер ячейки по порядку
+            cell_n = column_idx + row_idx * columns
+
+            # Устанавливаем размер шрифта
+            for paragraph in cells[cell_n].paragraphs:
+                paragraph.style.font.size = Pt(font_size)
 
 
 def set_table_rows_style(table, rows=(0, 1), style="Т-таблица-заголовок") -> None:
