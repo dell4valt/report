@@ -18,6 +18,7 @@ import pandas as pd
 from docx import Document
 from docx.enum.text import WD_BREAK
 from docx.shared import Cm, Pt
+from report.utils import insert_row_numbers_in_df
 
 
 class Report:
@@ -126,7 +127,7 @@ class Report:
         value: str = "",
         style: str = "Т-таблица",
     ) -> None:
-        """Метод объединяет ячейки таблицы и при необходимости 
+        """Метод объединяет ячейки таблицы и при необходимости
         вставляет текст в объединенные ячейки.
 
         Args:
@@ -143,13 +144,9 @@ class Report:
 
         # Проверка значений
         if start_row >= row_num or end_row >= row_num:
-            raise ValueError(
-                "Значение start_row или end_row больше количества строк в таблице."
-            )
+            raise ValueError("Значение start_row или end_row больше количества строк в таблице.")
         if start_column >= col_num or end_column >= col_num:
-            raise ValueError(
-                "Значение start_column или end_column больше количества столбцов в таблице."
-            )
+            raise ValueError("Значение start_column или end_column больше количества столбцов в таблице.")
 
         if (start_row > end_row or start_column > end_column) or (
             start_row < 0 or end_row < 0 or start_column < 0 or end_column < 0
@@ -204,33 +201,41 @@ class Report:
         text_style=STYLES["table"]["text"],
         first_row_table_style=STYLES["table"]["text_heading"],
         row_names=None,
+        rows_idx=False,
     ) -> None:
-        """
-        Метод вставляет Pandas DataFrame в файл отчета как отформатированную
+        """Метод вставляет Pandas DataFrame в файл отчета как отформатированную
         таблицу с возможностью указания заголовков для колонок, стилей таблицы и
         текста, ширины столбцов.
 
         Args:
-            df (Pandas.DataFrame): DataFrame содержащий данные, которые необходимо вставить
-        в таблицу документа Word.
-            title (str): Параметр title используется для указания заголовка (названия) таблицы,
-        которая будет вставлена в документ.
-            col_names(tuple, list): Параметр переопределяет заголовки колонок в таблице.
-        По умолчанию заголовки соответствуют названию колонок в DataFrame.
-            col_widths (tuple): При указании, кортеж переопределяет ширину колонок
-        таблицы по порядку.
-            col_format (tuple): Параметр используется для указания стиля форматирования
-        значений для каждого столбца таблицы.
-        Форматы соответствует f-строке (пример: ":g", ":g", ":.2f")
-            table_style (str): Название устанавливаемого стиля таблицы.
-        Стиль должен присутствовать в файле шаблона отчета. По умолчанию "Table Grid".
-            text_style: Название устанавливаемого основное стиля текста в таблице.
-        Стиль должен присутствовать в файле шаблона отчета. По умолчанию "Т-таблица".
-            first_row_table_style: Название устанавливаемого стиля строки заголовков таблицы.
-        Стиль должен присутствовать в файле шаблона отчета. По умолчанию "Т-таблица-заголовок".
+            df (pandas.DataFrame): DataFrame содержащий данные, которые необходимо вставить
+                в таблицу документа Word.
+            title (str, optional): Заголовок (название) таблицы, которая будет вставлена в документ.
+                По умолчанию None.
+            footer_text (str, optional): Текст примечания, который будет добавлен под таблицей.
+                По умолчанию None.
+            col_names (tuple, list, optional): Переопределяет заголовки колонок в таблице.
+                По умолчанию заголовки соответствуют названию колонок в DataFrame.
+            col_widths (tuple, optional): Переопределяет ширину колонок таблицы по порядку.
+                По умолчанию None.
+            col_format (tuple, optional): Стиль форматирования значений для каждого столбца таблицы.
+                Форматы соответствуют f-строке (пример: ":g", ":g", ":.2f").
+                По умолчанию None.
+            table_style (str, optional): Название устанавливаемого стиля таблицы.
+                Стиль должен присутствовать в файле шаблона отчета.
+                По умолчанию STYLES["table"]["table"].
+            text_style (str, optional): Название устанавливаемого основного стиля текста в таблице.
+                Стиль должен присутствовать в файле шаблона отчета.
+                По умолчанию STYLES["table"]["text"].
+            first_row_table_style (str, optional): Название устанавливаемого стиля строки
+                заголовков таблицы. Стиль должен присутствовать в файле шаблона отчета.
+                По умолчанию STYLES["table"]["text_heading"].
+            row_names (list, tuple, str, optional): Названия строк для добавления в первый столбец.
+                По умолчанию None.
+            rows_idx (bool, optional): Флаг для добавления нумерации строк. По умолчанию False.
 
         Returns:
-            Функция возвращает экземпляр docx.table.Table с произведенными изменениям.
+            docx.table.Table: Экземпляр таблицы с произведенными изменениями.
         """
         doc = self.doc
 
@@ -242,9 +247,10 @@ class Report:
 
         # Вставляем заголовок таблицы
         if title:
-            doc.add_paragraph(
-                f"{self.TEXT["table"]} — {title}", style=self.STYLES["table"]["title"]
-            )
+            doc.add_paragraph(f"{self.TEXT['table']} — {title}", style=self.STYLES["table"]["title"])
+
+        if rows_idx:
+            df = insert_row_numbers_in_df(df, "№")
 
         # Количество строк и столбцов в таблице
         rows = df.shape[0]
@@ -283,9 +289,7 @@ class Report:
             for column_idx in range(df.shape[1]):
                 cell_value = df.iat[row_idx, column_idx]
 
-                cell_idx = (
-                    (row_idx + 1) * columns + column_idx + (1 if add_row_names else 0)
-                )
+                cell_idx = (row_idx + 1) * columns + column_idx + (1 if add_row_names else 0)
 
                 # Если задан список стилей для форматирования текста
                 # устанавливаем формат для значения каждой ячейки
@@ -356,9 +360,7 @@ class Report:
         last_paragraph = doc.paragraphs[-1]
         last_paragraph.style = self.STYLES["figure"]["fig"]
         if title:
-            doc.add_paragraph(
-                f"{self.TEXT["figure"]} — {title}", style=self.STYLES["figure"]["title"]
-            )
+            doc.add_paragraph(f"{self.TEXT['figure']} — {title}", style=self.STYLES["figure"]["title"])
 
     def insert_page_break(self) -> None:
         """Метод вставляет в документ Word разрыв страницы
@@ -400,9 +402,7 @@ class Report:
         """
         set_table_style(table, style, first_row_style)
 
-    def _set_table_rows_style(
-        self, table, rows=(0, 1), style=STYLES["table"]["text_heading"]
-    ) -> None:
+    def _set_table_rows_style(self, table, rows=(0, 1), style=STYLES["table"]["text_heading"]) -> None:
         """Метод предназначен для установки заданного стиля для указанных строк таблицы.
 
         Args:
@@ -446,9 +446,7 @@ class Report:
             if template_path.suffix.lower() in [".docx", ".doc"]:
                 self.doc = Document(template)
             else:
-                print(
-                    f"Ошибка! Файл шаблона {template} должен иметь расширение .docx или .doc."
-                )
+                print(f"Ошибка! Файл шаблона {template} должен иметь расширение .docx или .doc.")
                 print("Отчет будет сохранен с файлом шаблона по умолчанию.")
                 self._init_empty_report()
         else:
@@ -474,10 +472,7 @@ class Report:
             p = paragraph._element
             p.getparent().remove(p)
         except IndexError:
-            print(
-                f"Ошибка, не удалось удалить параграф с индексом {index}. "
-                "Вероятно этот параграф не существует."
-            )
+            print(f"Ошибка, не удалось удалить параграф с индексом {index}. Вероятно этот параграф не существует.")
 
     def save(self, filename: str) -> None:
         """Метод сохраняет отчёт в файл Microsoft Word по заданному пути.
@@ -496,18 +491,13 @@ class Report:
             print(f"Файл: {report_path} успешно сохранён!")
             print("-" * 74 + "\n")
         except PermissionError:
-            print(
-                "\nОшибка! Не удалось сохранить файл. "
-                "Проверьте возможность записи файла по указанному пути."
-            )
+            print("\nОшибка! Не удалось сохранить файл. Проверьте возможность записи файла по указанному пути.")
             print("Возможно записываемый файл уже существует и открыт.")
 
             self._handle_save_error(filename)
 
     def _handle_save_error(self, path: str) -> None:
-        temp_path = (
-            str(Path(path).parent) + f"/temp_{random.randrange(1, 10**3):03}.docx"
-        )
+        temp_path = str(Path(path).parent) + f"/temp_{random.randrange(1, 10**3):03}.docx"
         inp = input(f"\nСохранить во временный файл {temp_path} (y/n)? ")
         if inp.lower() == "y":
             self.save(temp_path)
@@ -534,10 +524,7 @@ def set_table_columns_width(table, col_widths: tuple) -> None:
     rows = len(table.rows)
 
     if columns != len(col_widths):
-        print(
-            "\nВнимание количество заданных столбцов "
-            "не совпадает с количеством столбцов в таблице."
-        )
+        print("\nВнимание количество заданных столбцов не совпадает с количеством столбцов в таблице.")
         print(f"В таблице — {columns}, задано — {len(col_widths)}")
 
     for row_idx in range(rows):
@@ -556,9 +543,7 @@ def set_table_columns_width(table, col_widths: tuple) -> None:
                 cells[cell_n].width = success_width
 
 
-def set_table_style(
-    table, style="Т-таблица", first_row_style="Т-таблица-заголовок"
-) -> None:
+def set_table_style(table, style="Т-таблица", first_row_style="Т-таблица-заголовок") -> None:
     """Функция проходит по всем ячейкам таблицы table и устанавливает
     заданный стиль style параграфов в таблице. При желании можно
     указать стиль для заголовков таблицы (1-ая строка).
