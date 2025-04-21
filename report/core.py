@@ -313,6 +313,120 @@ class Report:
 
         return table
 
+    @staticmethod
+    def insert_table_row(table, index):
+        """
+        Вставляет новую строку в таблицу по указанному индексу.
+
+        Args:
+            table: Таблица docx, в которую нужно вставить строку
+            index: Индекс, по которому будет вставлена строка (0 = начало таблицы)
+
+        Returns:
+            Вставленная строка
+        """
+        # Проверяем допустимость индекса
+        row_count = len(table.rows)
+        if index < 0 or index > row_count:
+            raise ValueError(f"Индекс {index} вне диапазона [0, {row_count}]")
+
+        # Добавляем новую строку в конец
+        new_row = table.add_row()
+
+        # Если нужно вставить в конец, работа уже выполнена
+        if index == row_count:
+            return new_row
+
+        # Иначе перемещаем строки снизу вверх, начиная с последней
+        for i in range(row_count, index, -1):
+            # Исходная строка (которую нужно переместить вниз)
+            src_row = table.rows[i - 1]
+            # Целевая строка (куда нужно переместить)
+            dst_row = table.rows[i]
+
+            # Копируем содержимое и форматирование каждой ячейки
+            for j in range(len(table.columns)):
+                if j < len(src_row.cells) and j < len(dst_row.cells):
+                    # Копирование текста
+                    dst_cell = dst_row.cells[j]
+                    src_cell = src_row.cells[j]
+
+                    # Безопасное копирование текста
+                    if src_cell.paragraphs:
+                        # Очищаем все параграфы, кроме первого
+                        for p in list(dst_cell.paragraphs)[1:]:
+                            p._element.getparent().remove(p._element)
+
+                        # Копируем текст первого параграфа
+                        if dst_cell.paragraphs and src_cell.paragraphs:
+                            # Безопасное копирование текста
+                            dst_cell.paragraphs[0].text = src_cell.paragraphs[0].text or ""
+
+                            # Копирование стиля (проверка на None)
+                            if hasattr(src_cell.paragraphs[0], "style") and src_cell.paragraphs[0].style:
+                                try:
+                                    dst_cell.paragraphs[0].style = src_cell.paragraphs[0].style
+                                except:
+                                    pass  # Игнорируем ошибки со стилями
+
+                            # Копируем дополнительные параграфы
+                            for src_para in src_cell.paragraphs[1:]:
+                                dst_para = dst_cell.add_paragraph()
+                                dst_para.text = src_para.text or ""
+
+                                # Копирование стиля (с проверкой)
+                                if hasattr(src_para, "style") and src_para.style:
+                                    try:
+                                        dst_para.style = src_para.style
+                                    except:
+                                        pass  # Игнорируем ошибки со стилями
+                    else:
+                        dst_cell.text = ""
+
+                    # Безопасное копирование свойств ячейки
+                    try:
+                        v_align = src_cell._tc.get("vAlign")
+                        if v_align is not None:  # Проверка на None
+                            dst_cell._tc.set("vAlign", v_align)
+                    except:
+                        pass  # Игнорируем ошибку, если свойство не может быть скопировано
+
+                    # Безопасное копирование tcPr
+                    try:
+                        if src_cell._tc.tcPr is not None:
+                            dst_cell._tc.tcPr = deepcopy(src_cell._tc.tcPr)
+                    except:
+                        pass  # Игнорируем ошибку, если свойство не может быть скопировано
+
+        # Очищаем строку по указанному индексу
+        target_row = table.rows[index]
+
+        # Получаем шаблонную строку для форматирования
+        template_row_index = min(index + 1, row_count - 1) if index < row_count - 1 else max(0, index - 1)
+        template_row = table.rows[template_row_index]
+
+        # Очищаем содержимое, сохраняя базовое форматирование
+        for j, cell in enumerate(target_row.cells):
+            if j < len(template_row.cells):
+                # Очищаем содержимое параграфов, но оставляем хотя бы один
+                for p in list(cell.paragraphs)[1:]:
+                    try:
+                        p._element.getparent().remove(p._element)
+                    except:
+                        pass
+
+                if cell.paragraphs:
+                    cell.paragraphs[0].text = ""
+
+                # Копируем базовые свойства ячейки (безопасно)
+                try:
+                    if template_row.cells[j]._tc.tcPr is not None:
+                        cell._tc.tcPr = deepcopy(template_row.cells[j]._tc.tcPr)
+                except:
+                    pass  # Игнорируем ошибки копирования свойств
+
+        return target_row
+
     def insert_mpl_figure(self, chart, title="", dpi=200, width=16.5) -> None:
         """Метод вставляет график Matplotlib.plt в документ, предварительно
         сохранив его во временный файл. Устанавливает стили, добавляет заголовок
