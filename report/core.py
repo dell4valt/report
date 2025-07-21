@@ -427,6 +427,66 @@ class Report:
 
         return target_row
 
+    @staticmethod
+    def insert_table_second_row_header(
+        table,
+        merge_vertical_cols: list[int] = [0, 1],
+        merge_horizontal_start_col: int = 2,
+        merged_horizontal_text: str = "",
+    ):
+        """
+        Добавляет строку в начало таблицы и объединяет ячейки по правилам.
+
+        Args:
+            table: Таблица python-docx
+            merge_vertical_cols (list): Индексы столбцов, которые нужно объединить по вертикали (строки 1 и 2). По умолчанию [0, 1]
+            merge_horizontal_start_col (int): Индекс столбца, с которого нужно начать горизонтальное объединение в первой строке. По умолчанию 2
+            merged_horizontal_text (str): Текст для объединённой горизонтальной ячейки. По умолчанию ""
+        """
+
+        # Вспомогательная функция для установки текста ячейки
+        def set_cell_text(cell, text: str):
+            # Удаляем все параграфы
+            for p in cell.paragraphs:
+                p.clear()
+            # Добавляем один параграф с нужным текстом
+            cell.text = text.strip()
+
+        # Добавляем новую строку в конец и копируем строки вверх
+        table.add_row()
+        for i in range(len(table.rows) - 1, 0, -1):
+            for j in range(len(table.columns)):
+                table.cell(i, j).text = table.cell(i - 1, j).text
+
+        # Объединение вертикальных ячеек (строки 0 и 1)
+        for col in merge_vertical_cols:
+            if col < len(table.columns):
+                cell_top = table.cell(0, col)
+                cell_bottom = table.cell(1, col)
+
+                # Сохраняем текст верхней ячейки
+                top_text = cell_top.text.strip()
+
+                # Очистка нижней ячейки (останется мусор)
+                cell_bottom.text = ""
+
+                # Объединениям и устанавливаем текст
+                merged_cell = cell_top.merge(cell_bottom)
+                set_cell_text(merged_cell, top_text)
+
+        # Объединение горизонтальных ячеек в строке 0
+        if merge_horizontal_start_col < len(table.columns) - 1:
+            row = table.rows[0]
+            start_cell = row.cells[merge_horizontal_start_col]
+            end_cell = row.cells[-1]
+
+            # Очистим текст в объединяемых ячейках, кроме первой
+            for i in range(merge_horizontal_start_col + 1, len(table.columns)):
+                row.cells[i].text = ""
+
+            merged_cell = start_cell.merge(end_cell)
+            set_cell_text(merged_cell, merged_horizontal_text)
+
     def insert_mpl_figure(self, chart, title="", dpi=200, width=16.5) -> None:
         """Метод вставляет график Matplotlib.plt в документ, предварительно
         сохранив его во временный файл. Устанавливает стили, добавляет заголовок
