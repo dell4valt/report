@@ -274,7 +274,11 @@ class Report:
             # Сдвиг на 1, если если присутствуют названия строк
             header_idx = column_idx + (1 if add_row_names else 0)
             if col_names:
-                cells[header_idx].text = str(col_names[column_idx])
+                try:
+                    cells[header_idx].text = str(col_names[column_idx])
+                except IndexError:
+                    raise IndexError(f"Ошибка в задании количества заголовков к таблице, задано {len(col_names)} заголовков, а в таблице {columns} колонок.")
+
             else:
                 cells[header_idx].text = str(column_name)
 
