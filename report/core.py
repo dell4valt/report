@@ -189,6 +189,27 @@ class Report:
 
         return cell.text
 
+    @staticmethod
+    def set_table_cell_value(table, row: int, column: int, value: str) -> None:
+        """Устанавливает текст в ячейку таблицы.
+
+        Args:
+            table (Table): Таблица.
+            row (int): Номер строки.
+            column (int): Номер столбца.
+            value (str): Текст, который необходимо вставить в ячейку.
+        """
+        if not table:
+            raise ValueError("Таблица не должна быть пустой.")
+
+        if row < 0 or column < 0:
+            raise ValueError("Значение row или column не может быть отрицательным.")
+
+        if row >= len(table.rows) or column >= len(table.columns):
+            raise IndexError("Значение row или column выходит за границы таблицы.")
+
+        table.cell(row, column).text = value
+
     def insert_df_to_table(
         self,
         df,
@@ -277,7 +298,9 @@ class Report:
                 try:
                     cells[header_idx].text = str(col_names[column_idx])
                 except IndexError:
-                    raise IndexError(f"Ошибка в задании количества заголовков к таблице, задано {len(col_names)} заголовков, а в таблице {columns} колонок.")
+                    raise IndexError(
+                        f"Ошибка в задании количества заголовков к таблице, задано {len(col_names)} заголовков, а в таблице {columns} колонок."
+                    )
 
             else:
                 cells[header_idx].text = str(column_name)
