@@ -16,6 +16,7 @@ from importlib import resources
 
 import pandas as pd
 from docx import Document
+from docx.table import Table
 from docx.enum.text import WD_BREAK
 from docx.shared import Cm, Pt
 from report.utils import insert_row_numbers_in_df
@@ -191,7 +192,7 @@ class Report:
 
     @staticmethod
     def set_table_cell_value(table, row: int, column: int, value: str, style: str = "Т-таблица") -> None:
-        """Устанавливает текст в ячейку таблицы.
+        """Устан
 
         Args:
             table (Table): Таблица.
@@ -345,7 +346,7 @@ class Report:
         return table
 
     @staticmethod
-    def insert_table_row(table, index):
+    def insert_table_row(table, index: int):
         """
         Вставляет новую строку в таблицу по указанному индексу.
 
@@ -457,6 +458,46 @@ class Report:
                     pass  # Игнорируем ошибки копирования свойств
 
         return target_row
+
+    def insert_table_column(self, table: Table, index: int, values: list[str] = [], width: float = 0.4) -> None:
+        """Добавляет столбец в таблицу.
+
+        Args:
+            table: Таблица python-docx
+            index: Индекс позиции, на которую нужно добавить новый столбец
+            values: Список значений, которые нужно вставить в новый столбец
+            width: Ширина столбца в сантиметрах. По умолчанию 0.4
+        """
+        table.add_column(Cm(width))
+        last_col_idx = len(table.rows[0].cells) - 1
+
+        self.move_table_column(table, last_col_idx, index)
+
+        if values:
+            for i, val in enumerate(values):
+                self.set_table_cell_value(table, i, index, val)
+
+    @staticmethod
+    def move_table_column(table, from_index, to_index):
+        """
+        Перемещает колонку в таблице table с позиции from_index на позицию to_index.
+        Индексация с 0.
+        """
+        if from_index < 0 or to_index < 0:
+            raise ValueError("Значение from_index или to_index не может быть отрицательным.")
+
+        if from_index >= len(table.rows[0].cells) or to_index >= len(table.rows[0].cells):
+            raise IndexError("Значение from_index или to_index выходит за границы таблицы.")
+
+        for row in table.rows:
+            cells = list(row._tr)  # XML-элементы ячеек <w:tc>
+            cell = cells.pop(from_index)
+            cells.insert(to_index, cell)
+
+            # Перезаписываем структуру строки
+            row._tr.clear()
+            for c in cells:
+                row._tr.append(c)
 
     @staticmethod
     def insert_table_second_row_header(
