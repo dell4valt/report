@@ -265,9 +265,14 @@ class Report:
         """
         doc = self.doc
 
-        # Проверка на тип данных
+        # Проверка на тип данных и пустой DataFrame
         if not isinstance(df, pd.DataFrame):
             print("\nОшибка! Для вставки таблиц необходимо передать Pandas.DataFrame.")
+            print(f"Таблица '{title}' не будет вставлена в отчет.\n")
+            return
+
+        if df.empty:
+            print("\nОшибка! Для вставки таблицы необходимо передать не пустой Pandas.DataFrame.")
             print(f"Таблица '{title}' не будет вставлена в отчет.\n")
             return
 
