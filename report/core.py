@@ -841,28 +841,91 @@ def set_table_style(table, style="Т-таблица", first_row_style="Т-таб
                         )
 
 
-def set_table_font_size(table, font_size=10) -> None:
+def set_table_font_size(table, font_size=10, start=(0, 0), end=None, cells=None) -> None:
     """Метод проходит по всем ячейкам таблицы table и устанавливает
     заданный размер шрифта font_size параграфов в таблице.
 
     Args:
-        table (docx.table.Table): Таблица в документе docx
-        font_size (int): Размер шрифта. По умолчанию 10.
+        table (docx.table.Table): Таблица в документе python-docx
+        font_size (int): Размер шрифта в pt. По умолчанию 10.
+        font_size (int | float): Размер шрифта в pt.
+        start (tuple): (row, col) начала диапазона. По умолчанию (0, 0).
+        end (tuple | None): (row, col) конца диапазона включительно.
+                            Если None — до последней строки/колонки.
+        cells (list[tuple] | None): Список ячеек [(row, col), ...].
+                                    Если указан — игнорируется диапазон.
     """
+    # Конвертируем размер
+    font_size = Pt(font_size)
+
     # Получаем доступ к ячейкам таблицы из соображений производительности
     # и считаем количество колонок и строк
-    cells = table._cells
-    columns = len(table.columns)
+    cells_all = table._cells
     rows = len(table.rows)
+    cols = len(table.columns)
 
-    for row_idx in range(rows):
-        for column_idx in range(columns):
-            # Номер ячейки по порядку
-            cell_n = column_idx + row_idx * columns
+    # Если список ячеек не задан, строим его по диапазону
+    if cells is None:
+        end = end or (rows - 1, cols - 1)
+        start_row, start_col = start
+        end_row, end_col = end
 
-            # Устанавливаем размер шрифта
-            for paragraph in cells[cell_n].paragraphs:
-                paragraph.style.font.size = Pt(font_size)
+        cells = [(r, c) for r in range(start_row, end_row + 1)
+                          for c in range(start_col, end_col + 1)]
+
+    # Применяем изменения
+    for r, c in cells:
+        if r >= rows or c >= cols:
+            continue  # защита от выхода за границы
+        cell_n = c + r * cols  # индекс ячейки в table._cells
+        for paragraph in cells_all[cell_n].paragraphs:
+            for run in paragraph.runs:
+                run.font.size = font_size
+
+
+def set_table_font_style(table, style=None, bold=None, italic=None, start=(0, 0), end=None, cells=None) -> None:
+    """Метод проходит по всем ячейкам таблицы table и устанавливает
+    жирный и/или курсив для текста в run.
+
+    Args:
+        table (docx.table.Table): Таблица в документе python-docx
+        style (str | None): Стиль текста из документа (например, 'Normal' или 'Т-таблица').
+        None — не менять.
+        bold (bool | None): True/False для жирного. None — не менять.
+        italic (bool | None): True/False для курсива. None — не менять.
+        start (tuple): (row, col) начала диапазона. По умолчанию (0, 0).
+        end (tuple | None): (row, col) конца диапазона включительно.
+                            Если None — до последней строки/колонки.
+        cells (list[tuple] | None): Список ячеек [(row, col), ...].
+                                    Если указан — игнорируется диапазон.
+    """
+    # Быстрый доступ к ячейкам
+    cells_all = table._cells
+    rows = len(table.rows)
+    cols = len(table.columns)
+
+    # Определяем целевые ячейки
+    if cells is None:
+        end = end or (rows - 1, cols - 1)
+        start_row, start_col = start
+        end_row, end_col = end
+
+        cells = [(r, c) for r in range(start_row, end_row + 1)
+                          for c in range(start_col, end_col + 1)]
+
+    # Применяем изменения
+    for r, c in cells:
+        if r >= rows or c >= cols:
+            continue  # защита от выхода за границы
+        cell_n = c + r * cols  # индекс ячейки в table._cells
+        for paragraph in cells_all[cell_n].paragraphs:
+            if style:
+                paragraph.style = style
+            for run in paragraph.runs:
+                if bold is not None:
+                    run.font.bold = bold
+                if italic is not None:
+                    run.font.italic = italic
 
 
 def set_table_rows_style(table, rows=(0, 1), style="Т-таблица-заголовок") -> None:
@@ -889,6 +952,8 @@ def set_table_rows_style(table, rows=(0, 1), style="Т-таблица-загол
 
 
 def set_table_cell_style(table, row, column, style="Т-таблица") -> None:
+    # TODO: deprecated будет удалено в следующей версии
+    # вместо этой функции используйте set_table_font_style
     """Функция устанавливает заданный стиль style параграфов в ячейке таблицы table.
     Args:
         table (docx.table.Table): Таблица в документе docx
