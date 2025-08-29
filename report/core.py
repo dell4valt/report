@@ -213,7 +213,7 @@ class Report:
         table.cell(row, column).text = value
 
         if style:
-            set_table_cell_style(table, row, column, style=style)
+            set_table_font_style(table, style=style, cells=[(row, column)])
 
     def insert_df_to_table(
         self,
@@ -949,20 +949,3 @@ def set_table_rows_style(table, rows=(0, 1), style="Т-таблица-загол
             # основной стиль таблицы
             for paragraph in cells[cell_n].paragraphs:
                 paragraph.style = style
-
-
-def set_table_cell_style(table, row, column, style="Т-таблица") -> None:
-    # TODO: deprecated будет удалено в следующей версии
-    # вместо этой функции используйте set_table_font_style
-    """Функция устанавливает заданный стиль style параграфов в ячейке таблицы table.
-    Args:
-        table (docx.table.Table): Таблица в документе docx
-        row (int): Номер строки
-        column (int): Номер колонки
-        style (str): Название устанавливаемого стиля. Стиль должен присутствовать
-        в файле шаблона отчета. По умолчанию "Т-таблица".
-    """
-
-    cell = table.cell(row, column)
-    for paragraph in cell.paragraphs:
-        paragraph.style = style
