@@ -571,6 +571,21 @@ class Report:
             merged_cell = start_cell.merge(end_cell)
             set_cell_text(merged_cell, merged_horizontal_text)
 
+    @staticmethod
+    def highlight_min_max_in_table(table: Table, df: pd.DataFrame, column: str, subset=range(1, 13), rowidx: int = 1) -> None:
+        """Выделяет максимальное (жирным) и минимальное (курсивом) значения в таблице.
+
+        Args:
+            table (Table): Таблица для выделения.
+            df (DataFrame): Исходный DataFrame со значениями, для поиска минимума и максимума.
+            column (str): Название столбца для поиска минимума и максимума в DataFrame.
+            subset (list): Список индексов для подвыборки. По умолчанию [1, 2, ...,  12].
+            rowidx (int): Номер строки в таблице для выделения. По умолчанию 1.
+        """
+        min_max = find_min_max_in_df(df, column, subset=subset)
+        set_table_font_style(table=table, bold=True, cells=[(rowidx, min_max["max"]["position"])])
+        set_table_font_style(table=table, italic=True, cells=[(rowidx, min_max["min"]["position"])])
+
     def insert_mpl_figure(self, chart, title="", dpi=200, width=16.5) -> None:
         """Метод вставляет график Matplotlib.plt в документ, предварительно
         сохранив его во временный файл. Устанавливает стили, добавляет заголовок
@@ -949,3 +964,38 @@ def set_table_rows_style(table, rows=(0, 1), style="Т-таблица-загол
             # основной стиль таблицы
             for paragraph in cells[cell_n].paragraphs:
                 paragraph.style = style
+
+
+def find_min_max_in_df(df: pd.DataFrame, column: str, subset=None):
+    """
+    Находит минимальные и максимальные значения в колонке DataFrame
+    с возможностью ограничения поиска по строкам.
+
+    Args:
+        df (pd.DataFrame): таблица данных
+        column (str): имя колонки, где ищем минимум и максимум
+        subset (list, slice, None): список или диапазон индексов строк,
+                                        в которых выполняется поиск.
+                                        Если None – ищется по всему df.
+
+    Returns:
+        dict: словарь с данными о минимуме и максимуме
+    """
+    # выбираем ограниченное подмножество
+    if subset is not None:
+        series = df.loc[subset, column]
+    else:
+        series = df[column]
+
+    # индексы минимума и максимума (по исходному df)
+    min_idx = series.idxmin()
+    max_idx = series.idxmax()
+
+    # позиции строк в полном df
+    min_pos = df.index.get_loc(min_idx)
+    max_pos = df.index.get_loc(max_idx)
+
+    return {
+        "min": {"value": df.loc[min_idx, column], "index": min_idx, "position": min_pos, "row": df.loc[min_idx]},
+        "max": {"value": df.loc[max_idx, column], "index": max_idx, "position": max_pos, "row": df.loc[max_idx]},
+    }
