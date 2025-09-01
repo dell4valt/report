@@ -583,7 +583,7 @@ class Report:
         """
         min_max = find_min_max_in_series(series, subset=subset)
         set_table_font_style(table=table, bold=True, cells=[(rowidx, min_max["max"]["position"])])
-        set_table_font_style(table=table, italic=True, cells=[(rowidx, min_max["min"]["position"])])
+        set_table_font_style(table=table, italic=True, underline=True, cells=[(rowidx, min_max["min"]["position"])])
 
     def insert_mpl_figure(self, chart, title="", dpi=200, width=16.5) -> None:
         """Метод вставляет график Matplotlib.plt в документ, предварительно
