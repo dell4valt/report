@@ -572,17 +572,16 @@ class Report:
             set_cell_text(merged_cell, merged_horizontal_text)
 
     @staticmethod
-    def highlight_min_max_in_table(table: Table, df: pd.DataFrame, column: str, subset=range(1, 13), rowidx: int = 1) -> None:
+    def highlight_min_max_in_table(table: Table, series: pd.Series, subset=range(1, 13), rowidx: int = 1) -> None:
         """Выделяет максимальное (жирным) и минимальное (курсивом) значения в таблице.
 
         Args:
             table (Table): Таблица для выделения.
-            df (DataFrame): Исходный DataFrame со значениями, для поиска минимума и максимума.
-            column (str): Название столбца для поиска минимума и максимума в DataFrame.
+            series (Series): Исходный Series со значениями, для поиска минимума и максимума.
             subset (list): Список индексов для подвыборки. По умолчанию [1, 2, ...,  12].
             rowidx (int): Номер строки в таблице для выделения. По умолчанию 1.
         """
-        min_max = find_min_max_in_df(df, column, subset=subset)
+        min_max = find_min_max_in_series(series, subset=subset)
         set_table_font_style(table=table, bold=True, cells=[(rowidx, min_max["max"]["position"])])
         set_table_font_style(table=table, italic=True, cells=[(rowidx, min_max["min"]["position"])])
 
@@ -885,8 +884,7 @@ def set_table_font_size(table, font_size=10, start=(0, 0), end=None, cells=None)
         start_row, start_col = start
         end_row, end_col = end
 
-        cells = [(r, c) for r in range(start_row, end_row + 1)
-                          for c in range(start_col, end_col + 1)]
+        cells = [(r, c) for r in range(start_row, end_row + 1) for c in range(start_col, end_col + 1)]
 
     # Применяем изменения
     for r, c in cells:
@@ -925,8 +923,7 @@ def set_table_font_style(table, style=None, bold=None, italic=None, start=(0, 0)
         start_row, start_col = start
         end_row, end_col = end
 
-        cells = [(r, c) for r in range(start_row, end_row + 1)
-                          for c in range(start_col, end_col + 1)]
+        cells = [(r, c) for r in range(start_row, end_row + 1) for c in range(start_col, end_col + 1)]
 
     # Применяем изменения
     for r, c in cells:
@@ -966,36 +963,35 @@ def set_table_rows_style(table, rows=(0, 1), style="Т-таблица-загол
                 paragraph.style = style
 
 
-def find_min_max_in_df(df: pd.DataFrame, column: str, subset=None):
+def find_min_max_in_series(series: pd.Series, subset=None):
     """
-    Находит минимальные и максимальные значения в колонке DataFrame
-    с возможностью ограничения поиска по строкам.
+    Находит минимальные и максимальные значения в Series
+    с возможностью ограничения поиска по индексам.
 
     Args:
-        df (pd.DataFrame): таблица данных
-        column (str): имя колонки, где ищем минимум и максимум
-        subset (list, slice, None): список или диапазон индексов строк,
+        series (pd.Series): данные для анализа
+        subset (list, slice, None): список или диапазон индексов,
                                         в которых выполняется поиск.
-                                        Если None – ищется по всему df.
+                                        Если None – ищется по всему series.
 
     Returns:
         dict: словарь с данными о минимуме и максимуме
     """
     # выбираем ограниченное подмножество
     if subset is not None:
-        series = df.loc[subset, column]
+        filtered_series = series.loc[subset]
     else:
-        series = df[column]
+        filtered_series = series
 
-    # индексы минимума и максимума (по исходному df)
-    min_idx = series.idxmin()
-    max_idx = series.idxmax()
+    # индексы минимума и максимума (по исходному series)
+    min_idx = filtered_series.idxmin()
+    max_idx = filtered_series.idxmax()
 
-    # позиции строк в полном df
-    min_pos = df.index.get_loc(min_idx)
-    max_pos = df.index.get_loc(max_idx)
+    # позиции в полном series
+    min_pos = series.index.get_loc(min_idx)
+    max_pos = series.index.get_loc(max_idx)
 
     return {
-        "min": {"value": df.loc[min_idx, column], "index": min_idx, "position": min_pos, "row": df.loc[min_idx]},
-        "max": {"value": df.loc[max_idx, column], "index": max_idx, "position": max_pos, "row": df.loc[max_idx]},
+        "min": {"value": series.loc[min_idx], "index": min_idx, "position": min_pos},
+        "max": {"value": series.loc[max_idx], "index": max_idx, "position": max_pos},
     }
