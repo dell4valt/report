@@ -896,7 +896,9 @@ def set_table_font_size(table, font_size=10, start=(0, 0), end=None, cells=None)
                 run.font.size = font_size
 
 
-def set_table_font_style(table, style=None, bold=None, italic=None, start=(0, 0), end=None, cells=None) -> None:
+def set_table_font_style(
+    table, style=None, bold=None, italic=None, underline=None, start=(0, 0), end=None, cells=None
+) -> None:
     """Метод проходит по всем ячейкам таблицы table и устанавливает
     жирный и/или курсив для текста в run.
 
@@ -906,6 +908,7 @@ def set_table_font_style(table, style=None, bold=None, italic=None, start=(0, 0)
         None — не менять.
         bold (bool | None): True/False для жирного. None — не менять.
         italic (bool | None): True/False для курсива. None — не менять.
+        underline (bool | None): True/False для подчеркивания. None — не менять.
         start (tuple): (row, col) начала диапазона. По умолчанию (0, 0).
         end (tuple | None): (row, col) конца диапазона включительно.
                             Если None — до последней строки/колонки.
@@ -938,6 +941,8 @@ def set_table_font_style(table, style=None, bold=None, italic=None, start=(0, 0)
                     run.font.bold = bold
                 if italic is not None:
                     run.font.italic = italic
+                if underline is not None:
+                    run.font.underline = underline
 
 
 def set_table_rows_style(table, rows=(0, 1), style="Т-таблица-заголовок") -> None:
