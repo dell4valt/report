@@ -338,7 +338,7 @@ class Report:
                 # Если задан список стилей для форматирования текста
                 # устанавливаем формат для значения каждой ячейки
                 # иначе просто записываем строку значения в ячейку
-                if col_format and isinstance(cell_value, (float, int)):
+                if col_format and isinstance(cell_value, (float, int, pd.Timestamp)):
                     s = f"{{{col_format[column_idx]}}}"
                     cells[cell_idx].text = s.format(cell_value)
                 else:
