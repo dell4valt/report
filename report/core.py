@@ -11,14 +11,15 @@
 
 import os
 import random
-from pathlib import Path
 from importlib import resources
+from pathlib import Path
 
 import pandas as pd
 from docx import Document
-from docx.table import Table
 from docx.enum.text import WD_BREAK
 from docx.shared import Cm, Pt
+from docx.table import Table
+
 from report.utils import insert_row_numbers_in_df
 
 
@@ -572,7 +573,9 @@ class Report:
             set_cell_text(merged_cell, merged_horizontal_text)
 
     @staticmethod
-    def highlight_min_max_in_table(table: Table, series: pd.Series, subset=range(1, 13), rowidx: int = 1) -> None:
+    def highlight_min_max_in_table(
+        table: Table, series: pd.Series, subset=range(1, 13), rowidx: int = 1, col_offset: int = 0
+    ) -> None:
         """Выделяет максимальное (жирным) и минимальное (курсивом) значения в таблице.
 
         Args:
@@ -580,10 +583,15 @@ class Report:
             series (Series): Исходный Series со значениями, для поиска минимума и максимума.
             subset (list): Список индексов для подвыборки. По умолчанию [1, 2, ...,  12].
             rowidx (int): Номер строки в таблице для выделения. По умолчанию 1.
+            col_offset (int): Смещение столбца для выделения. По умолчанию 0.
         """
         min_max = find_min_max_in_series(series, subset=subset)
-        set_table_font_style(table=table, bold=True, cells=[(rowidx, min_max["max"]["position"])])
-        set_table_font_style(table=table, italic=True, underline=True, cells=[(rowidx, min_max["min"]["position"])])
+
+        for max_pos in min_max["max"]["positions"]:
+            set_table_font_style(table=table, bold=True, cells=[(rowidx, max_pos + col_offset)])
+
+        for min_pos in min_max["min"]["positions"]:
+            set_table_font_style(table=table, italic=True, underline=True, cells=[(rowidx, min_pos + col_offset)])
 
     def insert_mpl_figure(self, chart, title="", dpi=200, width=16.5) -> None:
         """Метод вставляет график Matplotlib.plt в документ, предварительно
@@ -980,7 +988,7 @@ def find_min_max_in_series(series: pd.Series, subset=None):
                                         Если None – ищется по всему series.
 
     Returns:
-        dict: словарь с данными о минимуме и максимуме
+        dict: словарь с данными о минимуме и максимуме, где индексы и позиции - списки
     """
     # выбираем ограниченное подмножество
     if subset is not None:
@@ -988,15 +996,19 @@ def find_min_max_in_series(series: pd.Series, subset=None):
     else:
         filtered_series = series
 
-    # индексы минимума и максимума (по исходному series)
-    min_idx = filtered_series.idxmin()
-    max_idx = filtered_series.idxmax()
+    min_value = filtered_series.min()
+    max_value = filtered_series.max()
+
+    # все индексы минимальных значений (по исходному series)
+    min_indices = filtered_series[filtered_series == min_value].index.tolist()
+    # все индексы максимальных значений (по исходному series)
+    max_indices = filtered_series[filtered_series == max_value].index.tolist()
 
     # позиции в полном series
-    min_pos = series.index.get_loc(min_idx)
-    max_pos = series.index.get_loc(max_idx)
+    min_positions = [series.index.get_loc(idx) for idx in min_indices]
+    max_positions = [series.index.get_loc(idx) for idx in max_indices]
 
     return {
-        "min": {"value": series.loc[min_idx], "index": min_idx, "position": min_pos},
-        "max": {"value": series.loc[max_idx], "index": max_idx, "position": max_pos},
+        "min": {"value": min_value, "indices": min_indices, "positions": min_positions},
+        "max": {"value": max_value, "indices": max_indices, "positions": max_positions},
     }
